@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,8 @@ import android.widget.Button;
 
 import com.alexoladele.testingshit.MainScreenFragment;
 import com.alexoladele.testingshit.R;
+
+import static android.content.Context.MODE_PRIVATE;
 
 // Declares WelcomeScreenFragment as subclass of fragment
 public class WelcomeScreenFragment extends Fragment {
@@ -51,13 +54,22 @@ public class WelcomeScreenFragment extends Fragment {
         startBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.i(TAG, "onClick: Button Clicked");
                 FragmentManager fm = getActivity().getSupportFragmentManager();
                 FragmentTransaction transaction = fm.beginTransaction();
 
+
+//        Create Shared Prefs to skip Welcome screen if already seen
+                getActivity().getSharedPreferences("PREFERENCE", MODE_PRIVATE).edit()
+                        .putBoolean("isFirstRun", false).apply();
+                Log.i(TAG, "onClick: Successfully Created Shared Pref");
+
+                Log.i(TAG, "onClick: Replacing Fragment");
                 transaction
                         .replace(R.id.root_layout, MainScreenFragment.newInstance())
                         .addToBackStack(null)
                         .commit();
+
             }
         });
     }

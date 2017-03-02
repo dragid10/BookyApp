@@ -25,10 +25,10 @@ public class MainScreenFragment extends Fragment {
         super.onCreateView(inflater, container, savedInstanceState);
         View view = inflater.inflate(R.layout.fragment_main_screen, container, false);
         return view;
-        
+
     }
 
     public static MainScreenFragment newInstance() {
-       return new MainScreenFragment();
+        return new MainScreenFragment();
     }
 }
