@@ -9,7 +9,13 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -19,10 +25,11 @@ public class SearchActivity extends ListActivity {
 
     private static final String TAG = "SearchActivity";
     private String qry;
+    private String fileName;
     private String siteSearchURL;
-    String response;
+    private String response;
+    private ArrayList<Integer> idList = new ArrayList<>();
 
-    private OkHttpClient httpClient;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -66,6 +73,7 @@ public class SearchActivity extends ListActivity {
 
         String libGenSiteURLPT1 = "http://gen.lib.rus.ec/search.php?req=", libGenSiteURLPT2 = "&lg_topic=libgen&open=0&view=simple&res=25&phrase=1&column=def";
         siteSearchURL = libGenSiteURLPT1 + query.replace(" ", "+") + libGenSiteURLPT2;
+        fileName = qry.toLowerCase().trim().replace(" ", "_");
         Log.d(TAG, "doSearch: LibGen Site URL query = " + siteSearchURL);
 
         Thread thread = new Thread(new Runnable() {
@@ -73,6 +81,16 @@ public class SearchActivity extends ListActivity {
             public void run() {
                 try {
                     setResponse(runReq(siteSearchURL));
+//                    Write response to Phone storage
+                    File file = new File(getApplicationContext().getCacheDir(), fileName);
+                    FileWriter writer = new FileWriter(file);
+                    writer.flush();
+                    writer.append(getResponse());
+                    writer.close();
+                    Log.i(TAG, "run: File successfully written to");
+
+                    Log.i(TAG, "run: Reading File HTML");
+                    getIDS();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -82,13 +100,32 @@ public class SearchActivity extends ListActivity {
 
         // TODO: 3/2/17 Work on parsing through HTML and getting relevant info perhaps using jSOUP?
 
+
+    }
+
+    private void getIDS() {
+        try {
+            File file = new File(getCacheDir(), fileName);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String searchString = "?id=";
+                if (line.contains(searchString)) {
+                    String word = line.substring(line.indexOf(searchString) + 4, line.indexOf("\'", 17));
+                    int tempIDStorage = Integer.parseInt(word);
+                    idList.add(tempIDStorage);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public String runReq(String url) throws IOException {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
-        httpClient = new OkHttpClient();
+        OkHttpClient httpClient = new OkHttpClient();
         Response response = httpClient.newCall(request).execute();
         return response.body().string();
     }
@@ -100,4 +137,6 @@ public class SearchActivity extends ListActivity {
     public void setResponse(String response) {
         this.response = response;
     }
+
+
 }
