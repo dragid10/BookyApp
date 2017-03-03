@@ -4,6 +4,7 @@ import android.app.ListActivity;
 import android.app.SearchManager;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
@@ -27,9 +28,10 @@ public class SearchActivity extends ListActivity {
     private String qry;
     private String fileName;
     private String siteSearchURL;
-    private String response;
+    private String stringResponse;
+    private Request request;
+    private Response response;
     private ArrayList<Integer> idList = new ArrayList<>();
-
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -80,17 +82,26 @@ public class SearchActivity extends ListActivity {
             @Override
             public void run() {
                 try {
-                    setResponse(runReq(siteSearchURL));
-//                    Write response to Phone storage
+                    setStringResponse(runReq(siteSearchURL));
+//                    Write stringResponse to Phone storage
                     File file = new File(getApplicationContext().getCacheDir(), fileName);
                     FileWriter writer = new FileWriter(file);
                     writer.flush();
-                    writer.append(getResponse());
+                    writer.append(getStringResponse());
                     writer.close();
                     Log.i(TAG, "run: File successfully written to");
 
+//                    Gets Book ID's and adds them to arraylist
                     Log.i(TAG, "run: Reading File HTML");
                     getIDS();
+
+
+//                    GET request to get JSON
+                    String getFinalURL = getJsonData();
+
+//                    Gets URL and saves to var
+                    String jsonResult = runReq(getFinalURL);
+                    Log.d(TAG, "run: jsonResult is: " + jsonResult);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -101,6 +112,30 @@ public class SearchActivity extends ListActivity {
         // TODO: 3/2/17 Work on parsing through HTML and getting relevant info perhaps using jSOUP?
 
 
+    }
+
+    @NonNull
+    private String getJsonData() throws IOException {
+        Log.i(TAG, "run: Getting JSON Data");
+        String getURL1 = "http://libgen.io/json.php?ids=",
+                getURL2 = "&fields=Title,Author,MD5",
+                getURLID = "",
+                getFinalURL = "";
+
+
+//                    Better gets the ID nums to put into var
+        StringBuilder builder = new StringBuilder();
+        for (int i : idList) {
+            if (i == idList.get(idList.size() - 1)) {
+                builder.append(i);
+            } else {
+                builder.append(i).append(",");
+            }
+        }
+//                    Builds final GET url
+        getURLID = builder.toString();
+        getFinalURL = getURL1 + getURLID + getURL2;
+        return getFinalURL;
     }
 
     private void getIDS() {
@@ -122,20 +157,20 @@ public class SearchActivity extends ListActivity {
     }
 
     public String runReq(String url) throws IOException {
-        Request request = new Request.Builder()
+        request = new Request.Builder()
                 .url(url)
                 .build();
         OkHttpClient httpClient = new OkHttpClient();
-        Response response = httpClient.newCall(request).execute();
+        response = httpClient.newCall(request).execute();
         return response.body().string();
     }
 
-    public String getResponse() {
-        return response;
+    public String getStringResponse() {
+        return stringResponse;
     }
 
-    public void setResponse(String response) {
-        this.response = response;
+    public void setStringResponse(String stringResponse) {
+        this.stringResponse = stringResponse;
     }
 
 
